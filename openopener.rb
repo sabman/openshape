@@ -34,7 +34,7 @@ get '/' do
 end
 
 post '/upload' do
-  return erb :nofileerror if params[:osmfile].nil?
+  return erb(:nofileerror) if params[:osmfile].nil?
 
   t = Tempfile.new("osmfile")
   File.open(t.path,"wb") do |f|
