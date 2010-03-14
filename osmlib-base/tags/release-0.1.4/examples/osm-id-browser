@@ -1,0 +1,466 @@
+#!/usr/bin/ruby -w
+#-----------------------------------------------------------------------------
+#
+#  OSM Id Browser
+#
+#  Created by Jochen Topf <jochen@topf.org>
+#
+#  http://osmlib.rubyforge.org/
+#
+#-----------------------------------------------------------------------------
+#
+#  The OSM Id Browser is used to inspect the contents of the OSM database
+#  through a web interface. If you start the OSM Id Browser it opens a
+#  web server on Port 8008. You can look up nodes, ways, and relations by
+#  ID. OSM Id Browser will show you the OSM objects with all attributes,
+#  coordinates, tags, etc.
+#
+#-----------------------------------------------------------------------------
+#
+#  This work is released into the public domain. This applies worldwide.
+#  In case this is not legally possible, any entity is granted the right
+#  to use this work for any purpose, without any conditions, unless such
+#  conditions are required by law.
+#
+#-----------------------------------------------------------------------------
+
+$: << 'lib' << '../lib'
+
+require 'rubygems'
+require 'webrick'
+require 'pathname'
+require 'builder'
+require 'OSM/API'
+
+PORT = 8008
+CSS = DATA.read
+BASE_URI = OSM::API::DEFAULT_BASE_URI
+
+# Path: /robots.txt
+# Make sure robots don't use this to suck down the whole
+# OSM database.
+class RobotsServlet < WEBrick::HTTPServlet::AbstractServlet
+
+    def do_GET(request, response)
+        response.status = 200
+        response['Content-type'] = 'text/plain'
+        response.body = "User-agent: *\nDisallow: /\n"
+    end
+
+end
+
+# Path: /lookup?query=...
+# Redirect queries to the right place.
+class LookupServlet < WEBrick::HTTPServlet::AbstractServlet
+
+    TYPE = { 'n' => 'node', 'w' => 'way', 'r' => 'relation' }
+
+    def do_GET(request, response)
+        response.status = 301
+
+        if request.query['query'] =~ /^([nwr])([0-9]+)$/
+            response['Location'] = "/#{TYPE[$1]}/#{$2}"
+        else
+            response['Location'] = "/"
+        end
+    end
+
+end
+
+class IdBrowserServlet < WEBrick::HTTPServlet::AbstractServlet
+
+    def html_for_page(x, title='', object=nil, history=nil, warning=nil, xml=nil)
+        x.html do
+            x.head do
+                x.title "#{title}OSM Id Browser"
+                x.style CSS, :class => 'text/css'
+            end
+            x.body do
+                x.table(:class => 'top') do
+                    x.tr do
+                        x.td { x.h1 'OSM Id Browser' }
+                        x.td do
+                            x.form(:method => 'get', :action => '/lookup') do
+                                x.label('Lookup', :for => 'lookup')
+                                x.text!(': ')
+                                x.input(:type => 'text', :id => 'lookup', :name => 'query', :accesskey => 's')
+                            end
+                        end
+                        x.td '(Enter ID of node, way, or relation like this: "n1234", "w3456", "r6789")'
+                    end
+                end
+                html_for_main(x, title, object, history, warning, xml)
+                x.div(:class => 'attribution') do
+                    x.text! 'OSM data is Copyright '
+                    x.a('OpenStreetMap', :class => 'extlink', :href => 'http://www.openstreetmap.org/')
+                    x.text! 'contributors - This web page served by '
+                    x.a('OSM Id Browser', :class => 'extlink', :href => 'http://osmlib.rubyforge.org/')
+                end
+            end
+        end
+    end
+
+end
+
+# Path: /
+# Everything thats not handled by on of the other servlets is
+# handled by this code that just creates an empty search box.
+class RootServlet < IdBrowserServlet
+
+    def do_GET(request, response)
+        response['Content-Type'] = 'text/html; charset=UTF-8'
+        response.status = 200
+        x = Builder::XmlMarkup.new(:indent => 2, :target => response.body)
+        html_for_page(x)
+    end
+
+    # intentionally left blank
+    def html_for_main(x, title, object, history, warning, xml)
+    end
+
+end
+
+# Path: /node/ID
+# Path: /way/ID
+# Path: /relation/ID
+# This is the main servlet showing information about an OSM object
+class ObjServlet < IdBrowserServlet
+
+    def initialize(config, type)
+        super
+        @type = type
+        @api = OSM::API.new
+    end
+
+    def html_for_tsu(x, object)
+        x.tr do
+            x.th('Timestamp:', :class => 'first')
+            x.td(object.timestamp)
+        end
+        x.tr do
+            x.th('User:', :class => 'first')
+            x.td do
+                if object.user
+                    x.a(object.user, :class => 'extlink', :href => "http://www.openstreetmap.org/user/#{object.user}")
+                else
+                    x.i '(hidden)'
+                end
+            end
+        end
+    end
+
+    def html_for_node(x, node, xml)
+        x.table(:class => 'desc') do
+            html_for_tsu(x, node)
+            x.tr do
+                x.th('Longitude:', :class => 'first')
+                x.td(node.lon)
+            end
+            x.tr do
+                x.th('Latitude:', :class => 'first')
+                x.td(node.lat)
+            end
+        end
+        ways = node.get_ways_using_node_from_api(@api)
+        xml << ['/ways', 'ways']
+        if ways.size > 0
+            x.h3 'Ways:'
+            x.table(:class => 'desc') do
+                ways.sort{ |a,b| a.id <=> b.id }.each do |way|
+                    x.tr do
+                        x.td(:class => 'first') do
+                            x.a("way #{way.id}", :href => "/way/#{way.id}")
+                        end
+                        x.td do
+                            html_for_tags_short(x, way.tags)
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    def html_for_way(x, way)
+        x.table(:class => 'desc') do
+            html_for_tsu(x, way)
+            x.tr do
+                x.th('Nodes:', :class => 'first')
+                x.td do
+                    way.nodes.each_with_index do |node, n|
+                        x.a(node, :href => "/node/#{node}")
+                        if way.nodes.size-1 != n
+                            x.text! ', '
+                        end
+                    end
+                    x.i( way.is_closed? ? '(closed)' : '(not closed)' )
+                end
+            end
+        end
+    end
+
+    def html_for_relation(x, relation)
+        x.table(:class => 'desc') do
+            html_for_tsu(x, relation)
+        end
+        x.h3 'Members:'
+        x.table(:class => 'desc') do
+            relation.members.each do |member| 
+                x.tr do
+                    x.td(:class => 'first') do
+                        x.a("#{member.type} #{member.ref}", :href => "/#{member.type}/#{member.ref}")
+                    end
+                    x.td do
+                        if member.role == ''
+                            x.i '(role empty)'
+                        else
+                            x.text! member.role
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    # Create HTML for a list of tags
+    def html_for_tags(x, tags)
+        return '' unless tags && tags.size > 0
+        x.h3('Tags:')
+        x.table(:class => 'desc') do
+            tags.keys.sort.each do |k|
+                x.tr do
+                    x.td(:class => 'first') do
+                        x.a(k, :class => 'extlink', :href => "http://wiki.openstreetmap.org/index.php/Key:#{k}")
+                    end
+                    x.td(tags[k])
+                end
+            end
+        end
+    end
+
+    def html_for_tags_short(x, tags)
+        t = tags.keys.sort
+        t.each_with_index do |k, n|
+            x.text! "#{k} = #{tags[k]}#{ t.size-1 == n ? '' : ', '}"
+        end
+    end
+
+    def html_for_object(x, obj, xml)
+        case obj.type
+            when 'node'
+                html_for_node(x, obj, xml)
+            when 'way'
+                html_for_way(x, obj)
+            when 'relation'
+                html_for_relation(x, obj)
+        end
+        html_for_tags(x, obj.tags)
+    end
+
+    def html_for_main(x, title, object, history, warning, xml)
+        x.div(:class => 'main') do
+            x.h1 do
+                x.text! @type.capitalize
+                x.span(@id, :class => 'objid')
+                if warning
+                    x.h1(warning, :class => 'warn')
+                end
+            end
+
+            if object
+                html_for_object(x, object, xml)
+                relations = object.get_relations_from_api(@api)
+                if relations.size > 0
+                    x.h3('Relations:')
+                    x.table(:class => 'desc relations') do
+                        relations.sort{ |a,b| a.id <=> b.id }.each do |rel|
+                            role = rel.member(object.type, object.id).role
+                            x.tr do
+                                x.td(:class => 'first') do
+                                    x.a("relation #{rel.id}", :href =>  "/relation/#{rel.id}")
+                                end
+                                x.th('Role:')
+                                if role == ''
+                                    x.td { x.i '(empty)' }
+                                else
+                                    x.td(role)
+                                end
+                                x.th('Tags:')
+                                x.td(rel.tags)
+                            end
+                        end
+                    end
+                end
+            end
+
+            if !history && object
+                history = object.get_history_from_api(@api)
+                history.pop
+            end
+            if history && history.size > 0
+                x.h2('Old versions:')
+                history.each do |obj|
+                    x.div(:class => 'old') do
+                        html_for_object(x, obj, xml)
+                    end
+                end
+            end
+        end
+        if xml.size > 0
+            x.div(:class => 'xml') do
+                x.text! 'Show XML from API: '
+                xml.each_with_index do |link, n|
+                    x.a(link[1], :href => "#{BASE_URI}#{@type}/#{@id}#{link[0]}")
+                    if xml.size-1 != n
+                        x.text!(' | ')
+                    end
+                end
+            end
+        end
+    end
+
+    def do_GET(request, response)
+        response['Content-Type'] = 'text/html; charset=UTF-8'
+        response.status = 200
+        x = Builder::XmlMarkup.new(:indent => 2, :target => response.body)
+
+        if request.path !~ /^\/#{@type}\/([0-9]+)$/
+            html_for_page(x)
+            return
+        end
+
+        @id = $1.to_i
+        title = "#{@type.capitalize} #{@id} | "
+        begin
+            object = @api.get_object(@type, @id)
+            xml = [
+                ['', @type],
+                ['/history', 'history'],
+                ['/relations', 'relations']
+            ]
+        rescue OSM::APIGone
+            warning = 'Deleted!'
+            history = @api.get_history(@type, @id)
+            xml = [ ['/history', 'history'] ]
+        rescue OSM::APINotFound
+            warning = 'Does not exist and never has!'
+            xml = []
+        end
+
+        html_for_page(x, title, object, history, warning, xml)
+    end
+
+end
+
+server = WEBrick::HTTPServer.new(:Port => PORT)
+
+server.mount('/',           RootServlet)
+server.mount('/lookup',     LookupServlet)
+server.mount('/node/',      ObjServlet, 'node')
+server.mount('/way/',       ObjServlet, 'way')
+server.mount('/relation/',  ObjServlet, 'relation')
+server.mount('/robots.txt', RobotsServlet)
+
+['TERM', 'INT'].each do |signal|
+    trap(signal) { server.shutdown }
+end
+
+server.start
+
+__END__
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Helvetica, Arial, sans-serif;
+    background-color: #e0e0e0;
+}
+
+a {
+    color: #000000;
+}
+
+a.extlink {
+    color: #4040f0;
+}
+
+table.top {
+    background-color: #e0eee0;
+    width: 100%;
+    border-bottom: 1px solid #d0d0d0;
+}
+
+table.top td {
+    padding: 4px;
+    vertical-align: middle;
+}
+
+table.top h1, table.top form {
+    margin: 0;
+}
+
+div.xml {
+    position: absolute;
+    top: 40px;
+    right: 0px;
+    margin: 10px;
+    padding: 6px;
+    border: 1px solid #c0c0c0;
+    background-color: #d0d0d0;
+}
+
+div.main {
+    padding: 10px;
+}
+
+div.old {
+    border: 1px dotted #a0a0a0;
+    margin-bottom: 6px;
+}
+
+h1 span.objid {
+    background-color: #f0f0f0;
+    padding: 0px 2px 0px 2px;
+}
+
+h1.warn {
+    color: #e02020;
+}
+
+h3 {
+    margin-left: 4px;
+    margin-bottom: 0;
+}
+
+table.desc {
+    border-spacing: 4px;
+    width: 100%;
+}
+
+table.desc th {
+    text-align: right;
+    vertical-align: top;
+    padding: 3px;
+}
+
+table.desc .first {
+    text-align: right;
+    width: 12em;
+}
+
+table.desc td {
+    background-color: #f0f0f0;
+    padding: 3px;
+    vertical-align: top;
+}
+
+table.relations th {
+    width: 5em;
+}
+
+div.attribution {
+    text-align: right;
+    font-size: 80%;
+    border-top: 1px solid #a0a0a0;
+    padding: 4px;
+}
+

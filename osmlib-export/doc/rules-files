@@ -1,0 +1,130 @@
+
+= Rules Files
+
+OSM uses a very powerful data model with free tagging; other formats
+generally have a stricter format. In most cases it is not possible to
+convert OSM data into other formats without losing some information.
+You'll have to pick which part of the information to retain and which
+part you'll have no interest in. This is done with a "rules file"
+which tells the library which OSM objects (with what tags) should
+be exported into which destination objects (with what attributes).
+
+Rules files always have a similar form, but contain some different
+commands depending on the destination format.
+
+== Rules Files are Ruby Code
+
+Rules files contain Ruby code. They use some tricks to make it easy
+to write rules files without knowing any Ruby, in fact you can mostly
+treat rules files as if they are written in some specialized "rules
+language". But because they contain normal Ruby code they can use all
+the power of Ruby if it is needed. This is sometimes called an "internal
+DSL" (domain specific language).
+
+== Common Structure
+
+Rules files always have the following structure:
+
+  setup :FORMAT do
+    ...
+  end
+
+  nodes do
+    ...
+  end
+
+  ways do
+    ...
+  end
+
+  relations do
+    ...
+  end
+
+The +setup+ section is run when the exporter starts, it defines the output
+format (:Shp, :KML, :CSV, ...) and - in the body of the setup section -
+file names, attribute lists, etc. (depending on the output format, see below).
+
+The +nodes+, +ways+, and +relations+ sections are called for each node, way,
+and relation, respectively. Inside those sections you give instructions
+on what to do with those objects. You only have to put in those sections
+you are actually interested in, so if you are only interested in nodes,
+just use a +nodes+ section.
+
+In these sections you'll generally use conditional expressions to define
+which data to export:
+
+  nodes do
+    if amenity == 'pharmacy'
+      ...
+    end
+  end
+
+  ways do
+    if highway == 'residential' || highway == 'unclassified'
+      ...
+    end
+  end
+
+You can use the full power of Ruby here, for instance with regular
+expressions. This will match all ways tagged <tt>highway=motorway</tt>
+or <tt>highway=motorway_link</tt>:
+
+  ways do
+    if highway =~ /^motorway(_link)?$/
+      ...
+    end
+  end
+
+If the tag key is not a valid Ruby word, i.e. if it contains other
+characters than alpahnumerics and the underscore, you'll have to use
+the following syntax:
+
+  nodes do
+    if tags['tiger:id']
+      ...
+    end
+  end
+
+For all objects, the methods +id+, +user+ and +timestamp+ are also
+available, for nodes also the latitude (+lat+) and longitude (+lon+).
+You don't have to use simple "if" clauses, you can use if-else or other
+more complex constructs:
+
+  nodes do
+    if highway
+      if oneway =~ /^(true|yes|1)$/
+        ...
+      elsif oneway == -1
+        ...
+      else
+        ...
+      end
+    end
+  end
+
+
+== Format dependant commands
+
+For each output format there are several commands for the different
+sections.
+
+For the setup section these command define file names or attributes etc.
+Generally everything that has to do with the format and structure of
+the output file.
+
+For the other sections they instruct the exporter to include some
+information in the output file. In most cases this will be the geometry
+of the current node or way plus some attributes.
+
+See the following files for more information about the format-specific
+commands:
+
+* link:files/doc/format-csv.html
+* link:files/doc/format-kml.html
+* link:files/doc/format-shp.html
+
+== Examples
+
+See the 'examples' directory for some example rule files.
+

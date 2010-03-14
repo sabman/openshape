@@ -1,0 +1,25 @@
+
+setup :Shp do
+    polyline :rail_lines do
+        string :ID, 20
+    end 
+
+    point :rail_stations do
+        string :ID, 20
+        string :Name, 100
+        string :UIC, 20
+    end
+end
+
+nodes do
+    if railway=='station'
+        :rail_stations << {:ID => id, :Name => name, :UIC => uic_ref}
+    end
+end
+
+ways do
+    if railway=='rail'
+        :rail_lines << {:ID => id}
+    end
+end
+

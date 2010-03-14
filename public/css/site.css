@@ -1,0 +1,44 @@
+body {
+  font-family: "Arial", sans-serif;
+  font-size: 12px;
+  background-color: #eee;
+}
+
+h1 {
+  font-size: 12px;
+}
+
+label {
+  display: block;
+  font-weight: bold;
+}
+
+#wrap {
+  float: left;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  width: 580px;
+  padding: 10px;
+  -webkit-box-shadow: rgba(0, 0, 0, 0.148438) 0px 1px 3px;
+  -webkit-border-radius: 5px; 
+}
+
+#footer {
+  text-align: left;
+}
+
+#convert {
+  background-color: #eee;
+  border: 1px solid #ccc;
+  padding: 4px;
+  font-weight: bold;
+  text-shadow: rgba(255, 255, 255, 0.496094) 0px 1px 0px;
+  -webkit-box-shadow: rgba(0, 0, 0, 0.148438) 0px 1px 3px;
+  -webkit-border-radius: 5px; 
+}
+
+.input_column {
+  display: block;
+  float: left;
+}
+

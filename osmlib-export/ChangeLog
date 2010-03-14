@@ -1,0 +1,27 @@
+
+0.1.4 2009-05-22
+	* Fixes for Ruby 1.9
+	* Support for API 0.6
+
+0.1.3 2008-06-24
+	* Added .prj and .cpg files to shapefiles
+	* Changed to work with new osmlib-base
+
+0.1.2 2008-02-18
+    * Copyright message now included in KML files
+    * Some syntax changes in rules files, mainly for making things more similar
+      between different output formats
+    * KML export needs less memory because it writes out XML as soon as
+      possible
+    * Lots of code cleanups
+    * CSV output uses symbolic field names now to be more in line with other
+      formats
+    * Uses the new libxml callback API / new OSM::StreamParser API
+    * Very preliminary GPX export
+
+0.1.1 2007-12-06
+    * Documentation updates
+
+0.1.0 2007-12-04
+    * First release
+

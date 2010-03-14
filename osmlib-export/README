@@ -1,0 +1,79 @@
+
+= OSM Library - Export
+
+A flexible library for exporting OpenStreetMap data into other formats.
+
+== License
+
+This work is released into the public domain. This applies worldwide.
+In case this is not legally possible, any entity is granted the right
+to use this work for any purpose, without any conditions, unless such
+conditions are required by law.
+
+== Author
+
+Jochen Topf <jochen@topf.org>
+
+== Web
+
+For more information see the OSM Library home page at
+http://osmlib.rubyforge.org/ or the Rubyforge project page at
+http://rubyforge.org/projects/osmlib/ . The OpenStreetMap web page
+is at http://www.openstreetmap.org/ .
+
+== Dependencies
+
+* GeoRuby
+* builder (for KML generation)
+* osmlib-base
+* gpx (Ruby GPX lib for GPX export)
+
+Dependencies are not all installed automatically when installing the gem
+packages because this breaks when the packages are already installed as
+Debian packages.
+
+== Supported Formats
+
+This library can currently export into the following formats:
+
+* KML (the XML-based format used by Google Earth and other products)
+* ESRI Shapefiles (a very common GIS format)
+* CSV (comma separated values, for use in spreadsheets or with UNIX
+  command line tools such as +grep+ and +cut+)
+* GPX (very preliminary support, needs patched version of ruby-gpx lib)
+
+== Rules Files
+
+OSM uses a very powerful data model with free tagging; other formats
+generally have a stricter format. In most cases it is not possible to
+convert OSM data into other formats without losing some information.
+You'll have to pick which part of the information to retain and which
+part you'll have no interest in. This is done with a "rules file"
+which tells the library which OSM objects (with what tags) should
+be exported into which destination objects (with what attributes).
+
+Rules files always have a similar form, but contain some different
+commands depending on the destination format.
+
+See link:files/doc/rules-files.html for details about the format.
+
+== Executable Usage
+
+There is an executable 'osmexport' in the 'bin' directory. If you installed
+this library as a gem it should have been installed in your path. If you
+use the Debian rubygems package it will have been installed in
+/var/lib/gems/1.8/bin or similar, you'll have to adjust your path or add
+a symlink from /usr/local/bin or so.
+
+Usage:
+
+  osmexport RULEFILE.oxr OSMFILE.osm OUTFILE/DIR
+
+For the KML export you have to use one .kml file as OUTPUTFILE. For the
+CSV and Shapefile export a OUTDIR is given and the actual file names
+are defined in the rule file.
+
+== Library Usage
+
+See the source of the executable for some ideas on how to use the library.
+

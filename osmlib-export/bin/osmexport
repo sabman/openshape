@@ -1,0 +1,71 @@
+#!/usr/bin/ruby -wKU
+#-----------------------------------------------------------------------------
+#
+#  osmexport RULEFILE OSMFILE OUTFILE/DIR
+#
+#  Export data from OpenStreetMap files into other formats
+#
+#-----------------------------------------------------------------------------
+
+$: << '../../osmlib-base/trunk/lib'
+$: << 'lib'
+
+require 'rubygems'
+require 'optparse'
+require 'geo_ruby'
+
+require 'OSM/StreamParser'
+
+class OEArguments < Hash
+
+    def initialize(args)
+        super()
+        
+        opts_parser = OptionParser.new do |opts|
+            opts.banner = 'Usage: osmexport RULEFILE OSMFILE OUTFILE/DIR'
+            opts.on_tail('-h', '--help', 'display this help and exit') do
+                puts opts
+                exit
+            end
+        end
+
+        opts_parser.parse!(args)
+    end
+
+end
+
+arguments = OEArguments.new(ARGV)
+
+if ARGV.size < 3
+    STDERR.puts 'Usage: osmexport RULEFILE OSMFILE OUTFILE/DIR'
+    exit 1
+end
+
+rulefilename = ARGV.shift
+osmfilename = ARGV.shift
+outfilename = ARGV.shift
+
+format = nil
+File.open(rulefilename) do |rulefile|
+    rulefile.each do |line|
+        if line =~ /^ *setup +:([A-Za-z]+) /
+            format = $1
+            break
+        end
+    end
+end
+
+if format !~ /^(KML|Shp|CSV|GPX)$/
+    STDERR.puts "Unknown format: #{format}"
+    exit 1
+end
+
+eval "require 'OSM/Export/#{format}'"
+mapper = eval "OSM::Export::#{format}.new(outfilename)"
+mapper.instance_eval(File.read(rulefilename), rulefilename)
+
+parser = OSM::Export::Parser.new(osmfilename, mapper)
+parser.parse
+
+mapper.commit
+

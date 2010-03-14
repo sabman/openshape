@@ -1,0 +1,51 @@
+
+= Export into CSV Files
+
+CSV (comma separated value) files have records separated by newlines. Each
+record contains several fields separated by a comma or other character.
+
+Lets say you want to export certain amenities and create something like this:
+ 
+  pharmacy|7.3213|53.2378|Becks Pharmacy
+  hospital|7.2345|53.3442|St. Johns Hospital
+  hospital|7.1453|53.2452|St. Mary Hospital
+
+You have the type in the first field, then the longitude and latitude and
+then the name.
+
+In the setup section you define the filename, the field names and the
+field separator character:
+
+  setup :CSV do
+    file :medical do
+      name "Hospitals_and_Pharmacies"
+      fields :type, :lon, :lat, :name
+      fs "|"
+    end
+  end
+
+Here <tt>:CSV</tt> is the type of export file, <tt>:medical</tt> is the
+symbolic name of the output file for later reference. +name+ defines
+the name of the output file, if you omit that, the name would have been
+taken from the symbolic name, i.e.
+"medical.csv" (<tt>.csv</tt> will always be added automatically). The
++fields+ line defines the symbolic names for the fields in order. And
+with +fs+ you define the field separator (default is a comma).
+
+Now you need the rules for the nodes:
+
+  nodes do
+    if amenity == 'hospital' || amenity == 'pharmacy'
+      :medical << { :type => amenity, :lon => lon, :lat => lat, :name => name }
+    end
+  end
+
+The important thing here is the middle line which says that you want
+to add a line to the <tt>:medical</tt> CSV file with the value of the
+amenity tag, the longitude and latitude and the name of this node. Use
+the symbolic names you defined for the fields above, order does not matter.
+
+You can define more than one file in your setup section and add nodes,
+ways or relations to any of those files. That way you can export, say
+some nodes into one file and some ways into another in one go.
+

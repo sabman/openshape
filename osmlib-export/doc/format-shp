@@ -1,0 +1,58 @@
+
+= Export into Shapefiles
+
+ESRI Shapefile is very common GIS file format. For more information about
+shapefiles see http://en.wikipedia.org/wiki/Shapefile and
+http://www.esri.com/library/whitepapers/pdfs/shapefile.pdf .
+
+== Setup Section
+
+The setup section has the following format:
+
+  setup :Shp do
+    point :pois do
+      name POIs
+      string :type, 30
+      string :id, 20
+      string :name, 100
+    end
+  end
+
+Here a shapefile (Format <tt>:Shp</tt>) containing point geometries (+point+)
+with the symbolic name <tt>:pois</tt> is defined. Its filename should be
+<tt>POIs</tt> (plus suffix <tt>.shp</tt>, <tt>.shx</tt>, and <tt>.dbf</tt>,
+respectively). If no name is given Osmexport will use the symbolic name
+(minus the colon) as the base name of the Shapefile). It should contain
+three attributes of type String (+string+) with different symbolic names
+and lengths.
+
+Shapefiles can only support one geometry type, either +point+, +polyline+,
+or +polygon+. If you need several geometry types, you need to define
+several shapefiles.
+
+Supported attribute types are +string+, +number+, and +boolean+. Booleans
+are always one byte, the other types need a maximum length. (The allowed
+attribute types for shapefiles in general are not documented well, see
+http://www.clicketyclick.dk/databases/xbase/format/data_types.html . Please
+contact the OSM Library mailinglist if you need other types.)
+
+== Nodes/Ways/Relations Sections
+
+Say you want to export all nodes with tourism tags into the shapefile.
+You'll need this code:
+
+  nodes do
+    if tourism
+      :pois << {:id => id, :name => name, :type => tourism}
+    end
+  end
+
+The middle line is the important one. It instructs the exporter to
+add a shape to the shapefile with the symbolic name <tt>:pois</tt>.
+This shape automatically contains the geometry of this node and some
+attributes: The OSM ID, the value of the name tag and the value of the
+tourism tag as type.
+
+The same format is used for ways. You can't add a relation to a shapefile
+because it doesn't have a geometry.
+

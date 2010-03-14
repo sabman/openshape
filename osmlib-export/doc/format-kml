@@ -1,0 +1,62 @@
+
+= Export into KML files
+
+KML is an XML-based format originally invented for use with the Google Earth
+program but now also used in many other applications. See
+http://code.google.com/apis/kml for the KML documentation.
+
+== Setup Section
+
+In the setup section you define the folder structure of the KML file
+including the names and descriptions of the document and folders and
+the styles used in the folders.
+
+  setup :KML do
+    name 'OpenStreetMap'
+    description 'Roads and parking lots'
+
+    folder :parking do
+      style do
+        icon( :href => 'http://maps.google.com/mapfiles/kml/shapes/parking_lot.png', :scale => 0.7 )
+      end
+    end
+
+    folder :roads do
+      style do
+        line( :color => '#f0f0f0f0', :width => 4 )
+      end
+    end
+  end
+
+Export goes into a KML file (<tt>:KML</tt>), the name of the document and
+a description are defined. Then two folders with the symbolic names
+<tt>:parking</tt> and <tt>:roads</tt>. For each folder a style is defined,
+in the first case an icon style (for nodes) and in the second a line style
+(for ways).
+
+== Nodes/Ways/Relations Sections
+
+In this case we want to add some parking lots in the nodes section.
+Everything with the tag <tt>amenity=parking</tt> is added to the
+<tt>:parking</tt> folder. We'll use the OSM ID as the KML ID and the value
+of the name tag as name of the KML placemark:
+
+  nodes do
+    if amenity == 'parking'
+      :parking << { :id => "n#{id}", :name => name }
+    end
+  end
+
+And in the ways section we add all ways with any highway tag in a similar
+way:
+
+  ways do
+    if highway
+      :roads << { :id => "w#{id}", :name => name }
+    end
+  end
+
+You can also set the description and the snippet:
+
+  :roads << { :id => "w#{id}", :name => name, :description => "#{name} (#{ref})", :snippet => ref }
+

@@ -1,0 +1,29 @@
+#
+#  Export urban railways (trams, light_rail, subway) with halts and stations.
+#
+
+setup :Shp do
+    polyline :urbanrail_lines do
+        string :ID, 20
+        string :Type, 20
+    end 
+
+    point :urbanrail_stations do
+        string :ID, 20
+        string :Type, 20
+        string :Name, 100
+    end
+end
+
+nodes do
+    if railway=='halt' || railway=='station'
+        :urbanrail_stations << {:ID => id, :Type => railway, :Name => name}
+    end
+end
+
+ways do
+    if railway=='tram' || railway=='light_rail' || railway=='subway'
+        :urbanrail_lines << {:ID => id, :Type => railway}
+    end
+end
+

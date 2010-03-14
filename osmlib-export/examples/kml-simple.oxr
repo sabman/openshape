@@ -1,0 +1,44 @@
+#
+#  Export a few POIs and roads to KML.
+#
+
+setup :KML do
+    name 'OpenStreetMap'
+    description 'Created from OSM data with Osmexport'
+
+    folder :poi do
+        name 'POI'
+        description 'Points of Interest'
+        folder :parking do
+            style do
+                icon( :href => 'http://maps.google.com/mapfiles/kml/shapes/parking_lot.png', :scale => 0.7 )
+            end
+        end
+        folder :fuel do
+            style do
+                icon( :href => 'http://maps.google.com/mapfiles/kml/pal2/icon21.png' )
+            end
+        end
+    end
+    folder :roads do
+        style do
+            line( :color => '#f0f0f0f0', :width => 4 )
+        end
+    end
+end
+
+nodes do
+    if amenity=='parking'
+        :parking << { :id => "n#{id}", :name => name }
+    end
+    if amenity=='fuel'
+        :fuel << { :id => "n#{id}", :name => name }
+    end
+end
+
+ways do
+    if highway
+        :roads << { :id => "w#{id}", :name => name }
+    end
+end
+

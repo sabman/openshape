@@ -1,0 +1,26 @@
+
+setup :Shp do
+    polygon :relpolygon do
+        string :id, 16
+        string :name, 32
+    end
+end
+
+# this looks for (multi)polygon relations and creates polygons for them
+# if the relation is not tagged with a name, it is taken from the first
+# way that has a name tag.
+relations do
+    if self['type'] == 'multipolygon' or self['type'] == 'polygon'
+        if name.nil?
+            members.each do |member|
+                n = @db.get_way(member.ref).name
+                if n
+                    self.name = n
+                    break
+                end
+            end
+        end
+        :relpolygon << { :id => id, :name => name }
+    end
+end
+

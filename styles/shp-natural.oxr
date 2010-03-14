@@ -1,0 +1,19 @@
+
+setup :Shp do
+    polygon :natural do
+        string :id, 16
+        string :name, 32
+        string :type, 16
+    end
+end
+
+ways do
+    if natural == "wood" or landuse == "forest"
+        :natural << { :id => id, :name => name, :type => "forest" }
+    elsif leisure == "park"
+        :natural << { :id => id, :name => name, :type => "park" }
+    elsif natural == "water"
+        :natural << { :id => id, :name => name, :type => "water" }
+    end
+end
+

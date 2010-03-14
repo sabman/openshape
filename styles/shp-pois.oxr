@@ -1,0 +1,18 @@
+#
+#  Export some POIs of different types.
+#
+
+setup :Shp do
+    point :pois do
+        string :type, 30
+        string :id, 20
+        string :name, 100
+    end
+end
+
+nodes do
+    if tourism
+        :pois << {:id => id, :name => name, :type => tourism}
+    end
+end
+

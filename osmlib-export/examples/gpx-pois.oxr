@@ -1,0 +1,14 @@
+
+# export of amenity POIs into waypoints
+
+setup :GPX do
+end
+
+nodes do
+
+    if amenity
+        :waypoints << { :name => name, :desc => amenity, :sym => 'Flag, Blue' }
+    end
+
+end
+

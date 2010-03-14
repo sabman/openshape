@@ -1,0 +1,33 @@
+#
+#  Export of some POIs and roads into CSV files.
+#
+
+setup :CSV do
+    # a file for POIs with standard field and record separators
+    file :pois do
+        fields :lon, :lat, :type
+    end
+
+    # to add a first line with a data description, just add it here
+    :pois << { :lon => 'longitude', :lat => 'latitude', :type => 'type' }
+
+    # a file for the roads with a | as the field separator
+    file :roads do
+        name 'Roads'
+        fields :type, :name, :oneway, :geometry
+        fs '|'
+    end
+end
+
+nodes do
+    if amenity
+        :pois << { :lon => lon, :lat => lat, :type => amenity }
+    end
+end
+
+ways do
+    if highway
+        :roads << { :type => highway, :name => name, :oneway => oneway, :geometry => geometry.as_wkt }
+    end
+end
+
