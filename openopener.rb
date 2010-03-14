@@ -36,7 +36,7 @@ end
 post '/upload' do
   return erb(:nofileerror) if params[:osmfile].nil?
 
-  t = Tempfile.new("osmfile")
+  t = Tempfile.new("osmfile", '.')
   File.open(t.path,"wb") do |f|
     f.write(params[:osmfile][:tempfile].read)
   end
