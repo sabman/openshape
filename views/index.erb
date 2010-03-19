@@ -8,21 +8,20 @@
   <link rel="stylesheet" href="css/site.css" type="text/css" media="screen" charset="utf-8" />
   <link rel="stylesheet" href="js/uniform/css/uniform.default.css" type="text/css" media="screen" charset="utf-8" />
   
-  <title>OpenOpener</title> 
+  <title>OpenShape</title> 
 </head> 
 <body> 
   <div id='wrap'>
+    <div class='content'>
     <div id='head'>
-      <h1>OSM to Shapefile Converter</h1>
-      <p>This application will convert OpenStreetMap XML (as exported by JOSM) to Shapefiles usable by desktop GIS products</p>
     </div>
-    <div id='content'>
+    <div id='page'>
       <form action='upload' enctype='multipart/form-data' method='POST'>
         <div class='input_column'>
           <label for='osmfile'>.osm file</label>
           <input type='file' id='osmfile' name='osmfile' />
         </div>
-        <div class='input_column'>
+        <div class='input_column' style='display: none;'>
           <label for='osmstyle'>include features</label>
           <select id='osmstyle' name='osmstyle'>
             <!--<option value='shp-railway'>railway-->
@@ -30,8 +29,14 @@
           </select>
         </div>
         <br />
-        <input type='submit' value='Convert' id='convert' name='convert' />
+        <input type='submit' value='Convert to Shapefile' id='convert' name='convert' />
       </form>
+        <small>the returned zipfile will contain all files necessary to 
+          load OpenStreetMap data into desktop GIS clients as a shapefile</small>
+    </div>
+    <div id='footer'>
+      <a href="http://www.mapbox.com/"><img src='http://mapbox.com/sites/all/modules/contrib/mapbox/js/mapbox.png' /></a>
+    </div>
     </div>
   </div>
 </body>
